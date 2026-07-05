@@ -1,104 +1,53 @@
-import tkinter as tk
+import streamlit as st
 import config
 
-# 匯入各個遊戲模組
-from game_blackjack import BlackjackGame
-from game_slots import SlotsGame
-from game_wheel import WheelGame
+# 匯入各個遊戲頁面
+from game_blackjack import run_blackjack
+from game_slots import run_slots
+from game_wheel import run_wheel
+
+# 初始化 Session State (確保重新整理時籌碼和頁面狀態不會消失)
+if "chips" not in st.session_state:
+    st.session_state.chips = config.INITIAL_CHIPS
+
+if "page" not in st.session_state:
+    st.session_state.page = "lobby"
+
+st.set_page_config(page_title="迷你遊戲大廳", page_icon="🎮", layout="centered")
 
 
-class GameLobbyApp:
-
-    def __init__(self, root):
-        self.root = root
-        self.root.title("遊戲大廳 Game Lobby")
-        self.root.geometry("410x550")
-        self.root.configure(bg=config.BG_MAIN)
-
-        # 讀取設定檔的初始籌碼
-        self.chips = config.INITIAL_CHIPS
-
-        # 主要的內容容器 (隨時清除並替換遊戲畫面)
-        self.main_frame = tk.Frame(self.root, bg=config.BG_MAIN)
-        self.main_frame.pack(fill="both", expand=True)
-
-        self.create_main_menu()
-
-    def clear_frame(self):
-        """清空畫面的輔助函式"""
-        for widget in self.main_frame.winfo_children():
-            widget.destroy()
-
-    def create_main_menu(self):
-        """顯示主大廳選單"""
-        self.clear_frame()
-
-        # 大廳標題
-        tk.Label(
-            self.main_frame,
-            text="🎮 迷你遊戲大廳",
-            font=config.FONT_TITLE,
-            fg=config.FG_LIGHT,
-            bg=config.BG_MAIN,
-        ).pack(pady=30)
-
-        # 籌碼顯示
-        tk.Label(
-            self.main_frame,
-            text=f"目前籌碼: {self.chips} 💰",
-            font=config.FONT_LARGE,
-            fg=config.FG_GOLD,
-            bg=config.BG_MAIN,
-        ).pack(pady=10)
-
-        # 按鈕共用樣式
-        btn_style = {
-            "font": config.FONT_BTN,
-            "width": 20,
-            "height": 2,
-            "bd": 0,
-            "cursor": "hand2",
-            "fg": "white",
-        }
-
-        # 三個遊戲按鈕
-        tk.Button(
-            self.main_frame,
-            text="🎡 抽獎轉盤",
-            bg=config.BTN_WHEEL,
-            command=self.start_wheel,
-            **btn_style,
-        ).pack(pady=10)
-        tk.Button(
-            self.main_frame,
-            text="🎰 幸運拉霸機",
-            bg=config.BTN_SLOTS,
-            command=self.start_slots,
-            **btn_style,
-        ).pack(pady=10)
-        tk.Button(
-            self.main_frame,
-            text="🃏 21點撲克牌",
-            bg=config.BTN_BJ,
-            command=self.start_blackjack,
-            **btn_style,
-        ).pack(pady=10)
-
-    # 點擊按鈕後，清除畫面並初始化對應的遊戲類別
-    def start_wheel(self):
-        self.clear_frame()
-        WheelGame(self.main_frame, self)
-
-    def start_slots(self):
-        self.clear_frame()
-        SlotsGame(self.main_frame, self)
-
-    def start_blackjack(self):
-        self.clear_frame()
-        BlackjackGame(self.main_frame, self)
+# 返回大廳的函式
+def go_to_lobby():
+    st.session_state.page = "lobby"
 
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = GameLobbyApp(root)
-    root.mainloop()
+# --- 遊戲大廳畫面 ---
+if st.session_state.page == "lobby":
+    st.title("🎮 迷你遊戲大廳")
+    st.subheader(f"目前籌碼: {st.session_state.chips} 💰")
+    st.write("---")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        if st.button("🎡 抽獎轉盤", use_container_width=True):
+            st.session_state.page = "wheel"
+            st.rerun()
+
+    with col2:
+        if st.button("🎰 幸運拉霸機", use_container_width=True):
+            st.session_state.page = "slots"
+            st.rerun()
+
+    with col3:
+        if st.button("🃏 21點撲克牌", use_container_width=True):
+            st.session_state.page = "blackjack"
+            st.rerun()
+
+# --- 路由切換 ---
+elif st.session_state.page == "wheel":
+    run_wheel(go_to_lobby)
+elif st.session_state.page == "slots":
+    run_slots(go_to_lobby)
+elif st.session_state.page == "blackjack":
+    run_blackjack(go_to_lobby)

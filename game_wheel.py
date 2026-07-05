@@ -1,90 +1,40 @@
 import random
-import tkinter as tk
-import config
+import time
+import streamlit as st
 
 
-class WheelGame:
+def run_wheel(back_to_lobby):
+    st.title("🎡 抽獎轉盤")
+    st.subheader(f"目前籌碼: {st.session_state.chips} 💰")
 
-    def __init__(self, parent_frame, app_instance):
-        self.frame = parent_frame
-        self.app = app_instance
+    prizes = [
+        ("銘謝惠顧", 0),
+        ("小獎 (+50)", 50),
+        ("中獎 (+100)", 100),
+        ("大獎 (+500)", 500),
+    ]
 
-        # 標題
-        tk.Label(
-            self.frame,
-            text="🎡 抽獎轉盤",
-            font=config.FONT_SUBTITLE,
-            fg=config.FG_LIGHT,
-            bg=config.BG_MAIN,
-        ).pack(pady=20)
+    if st.button("花費 50 籌碼旋轉！", type="primary"):
+        if st.session_state.chips < 50:
+            st.error("籌碼不足囉！")
+        else:
+            st.session_state.chips -= 50
 
-        # 獎項設定
-        self.prizes = [
-            ("銘謝惠顧", 0),
-            ("小獎 (+50)", 50),
-            ("中獎 (+100)", 100),
-            ("大獎 (+500)", 500),
-        ]
+            # 模擬轉動動效
+            status = st.empty()
+            for _ in range(5):
+                status.write(f"🌀 旋轉中... {random.choice(prizes)[0]}")
+                time.sleep(0.2)
 
-        self.result_var = tk.StringVar(value="試試你的手氣吧！")
-        tk.Label(
-            self.frame,
-            textvariable=self.result_var,
-            font=config.FONT_LARGE,
-            fg=config.FG_GOLD,
-            bg=config.BG_MAIN,
-        ).pack(pady=40)
+            prize_name, prize_value = random.choice(prizes)
+            st.session_state.chips += prize_value
 
-        # 籌碼顯示
-        self.chips_display = tk.Label(
-            self.frame,
-            text=f"目前籌碼: {self.app.chips} 💰",
-            font=config.FONT_NORMAL,
-            fg=config.FG_LIGHT,
-            bg=config.BG_MAIN,
-        )
-        self.chips_display.pack()
+            status.empty()
+            st.balloons() if prize_value > 0 else None
+            st.success(f"🎉 結果：{prize_name}！")
+            st.rerun()
 
-        # 按鈕
-        tk.Button(
-            self.frame,
-            text="花費 50 籌碼旋轉！",
-            font=config.FONT_BTN,
-            bg=config.BTN_WHEEL,
-            fg="white",
-            command=self.spin,
-        ).pack(pady=10)
-        tk.Button(
-            self.frame,
-            text="返回主選單",
-            font=config.FONT_BTN,
-            bg=config.BTN_BACK,
-            fg="white",
-            command=self.app.create_main_menu,
-        ).pack(pady=20)
-
-    def spin(self):
-        if self.app.chips < 50:
-            from tkinter import messagebox
-
-            messagebox.showwarning(
-                "餘額不足", "轉一次需要 50 籌碼，你點數不夠囉！"
-            )
-            return
-
-        self.app.chips -= 50
-        self.chips_display.config(text=f"目前籌碼: {self.app.chips} 💰")
-
-        def animate(count):
-            if count > 0:
-                self.result_var.set(
-                    f"🌀 旋轉中... {random.choice(self.prizes)[0]} 🌀"
-                )
-                self.frame.after(100, lambda: animate(count - 1))
-            else:
-                prize_name, prize_value = random.choice(self.prizes)
-                self.app.chips += prize_value
-                self.result_var.set(f"🎉 結果：{prize_name}！")
-                self.chips_display.config(text=f"目前籌碼: {self.app.chips} 💰")
-
-        animate(10)
+    st.write("---")
+    if st.button("返回主選單"):
+        back_to_lobby()
+        st.rerun()
