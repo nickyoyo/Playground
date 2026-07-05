@@ -23,7 +23,6 @@ def run_blackjack(back_to_lobby):
     st.title("🃏 21點撲克牌")
     st.subheader(f"目前籌碼: {st.session_state.chips} 💰")
 
-    # 初始化對局狀態
     if "bj_game_over" not in st.session_state:
         st.session_state.bj_game_over = True
         st.session_state.player_hand = []
@@ -66,7 +65,6 @@ def run_blackjack(back_to_lobby):
                 st.session_state.bj_game_over = False
                 st.rerun()
     else:
-        # 遊戲進行中
         p_score = calc_score(st.session_state.player_hand)
 
         st.write(
@@ -78,7 +76,7 @@ def run_blackjack(back_to_lobby):
 
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("要牌 (Hit)"):
+            if st.button("要牌 (Hit)", width="stretch"):
                 st.session_state.player_hand.append(st.session_state.deck.pop())
                 if calc_score(st.session_state.player_hand) > 21:
                     st.error("💥 你爆掉了！莊家獲勝！")
@@ -86,8 +84,7 @@ def run_blackjack(back_to_lobby):
                 st.rerun()
 
         with col2:
-            if st.button("停牌 (Stand)"):
-                # 莊家補牌
+            if st.button("停牌 (Stand)", width="stretch"):
                 while calc_score(st.session_state.dealer_hand) < 17:
                     st.session_state.dealer_hand.append(
                         st.session_state.deck.pop()
@@ -113,11 +110,10 @@ def run_blackjack(back_to_lobby):
                     st.session_state.chips += 200
 
                 st.session_state.bj_game_over = True
-                st.columns(1)  # 重新整理
-                if st.button("確認結果"):
+                if st.button("確認結果", width="stretch"):
                     st.rerun()
 
     st.write("---")
-    if st.button("返回主選單"):
+    if st.button("返回主選單", width="content"):
         back_to_lobby()
         st.rerun()

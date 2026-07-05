@@ -5,13 +5,13 @@ import streamlit as st
 
 
 def run_slots(back_to_lobby):
+    # 主介面頂部資訊
     st.title("🎰 幸運拉霸機")
     st.subheader(f"目前籌碼: {st.session_state.chips} 💰")
 
+    # 1. 讀取資料夾內的圖片
     img_dir = "slot_images"
     images = []
-
-    # 1. 讀取資料夾內的圖片
     if os.path.exists(img_dir):
         valid_extensions = (".png", ".jpg", ".jpeg", ".bmp")
         images = [
@@ -20,13 +20,13 @@ def run_slots(back_to_lobby):
             if f.lower().endswith(valid_extensions)
         ]
 
-    # 防呆機制：如果圖片不夠，改用 Emoji
     use_fallback = len(images) < 3
     symbols = ["🍎", "🍌", "🍒", "🍇", "🍋"]
 
-    # 2. 建立三個欄位的「動態容器」
+    # 2. 建立乾淨的三個欄位
     slot_cols = st.columns(3)
     placeholders = []
+
     with slot_cols[0]:
         placeholders.append(st.empty())
     with slot_cols[1]:
@@ -34,22 +34,35 @@ def run_slots(back_to_lobby):
     with slot_cols[2]:
         placeholders.append(st.empty())
 
-    # 初始靜態畫面顯示
+    # 3. 使用 session_state 記錄最後畫面，確保結果不跳回
+    if "last_slot_res" not in st.session_state:
+        st.session_state.last_slot_res = [0, 0, 0] if use_fallback else []
+
+    # 初始化或維持上一次的畫面
     for i in range(3):
         if use_fallback:
+            current_sym = (
+                st.session_state.last_slot_res[i]
+                if st.session_state.last_slot_res[i] != 0
+                else "❓"
+            )
             placeholders[i].markdown(
-                "<h1 style='text-align: center;'>❓</h1>",
+                f"<h1 style='text-align: center; margin: 0;'>{current_sym}</h1>",
                 unsafe_allow_html=True,
             )
         else:
-            placeholders[i].image(images[0], width=150)
+            current_img = (
+                st.session_state.last_slot_res[i]
+                if st.session_state.last_slot_res
+                else images[0]
+            )
+            placeholders[i].image(current_img, width="stretch")
 
-    # 建立結果與訊息通知專用的空白容器
+    # 狀態與結果訊息區
     msg_placeholder = st.empty()
-    msg_placeholder.info("試試連成一線！(消費 100 籌碼)")
 
-    # 3. 按下按鈕開始轉動
-    if st.button("🎰 拉下搖桿！", type="primary"):
+    # 4. 按下按鈕開始轉動
+    if st.button("🎰 拉下搖桿！ (消費 100 籌碼)", type="primary"):
         if st.session_state.chips < 100:
             msg_placeholder.error("點數不夠連拉霸機都玩不起囉！")
         else:
@@ -57,53 +70,58 @@ def run_slots(back_to_lobby):
             st.session_state.chips -= 100
             msg_placeholder.warning("🌀 滾動中... 祝你好運！")
 
-            # --- 🎢 圖片旋轉過程 (動畫效果) ---
-            # 滾動 12 次，每次稍微停留一下，營造動態感
+            # --- 🎢 圖片旋轉過程動畫 ---
             for _ in range(12):
                 for i in range(3):
                     if use_fallback:
                         current_sym = random.choice(symbols)
                         placeholders[i].markdown(
-                            f"<h1 style='text-align: center;'>{current_sym}</h1>",
+                            f"<h1 style='text-align: center; margin: 0;'>{current_sym}</h1>",
                             unsafe_allow_html=True,
                         )
                     else:
                         current_img = random.choice(images)
-                        placeholders[i].image(current_img, width=150)
-                time.sleep(0.1)  # 控制滾動速度 (秒)
+                        placeholders[i].image(current_img, width="stretch")
+                time.sleep(0.1)
 
             # --- 🛑 最終開獎結果 ---
             final_res = []
+            final_displays = []
             for i in range(3):
                 if use_fallback:
                     chosen = random.choice(symbols)
                     placeholders[i].markdown(
-                        f"<h1 style='text-align: center;'>{chosen}</h1>",
+                        f"<h1 style='text-align: center; margin: 0;'>{chosen}</h1>",
                         unsafe_allow_html=True,
                     )
+                    final_displays.append(chosen)
                     final_res.append(chosen)
                 else:
                     chosen = random.choice(images)
-                    placeholders[i].image(chosen, width=150)
-                    # 擷取檔名來做為中獎判斷依據，避免記憶體圖案物件對比失敗
+                    placeholders[i].image(chosen, width="stretch")
+                    final_displays.append(chosen)
                     final_res.append(os.path.basename(chosen))
 
-            # 判斷是否三張圖片/文字完全相同
+            # 將結果存入記憶
+            st.session_state.last_slot_res = final_displays
+
+            # 判斷是否中獎
             is_win = final_res[0] == final_res[1] == final_res[2]
 
-            # 顯示對應的獎懲與特效
             if is_win:
                 st.session_state.chips += 1000
-                st.balloons()  # 噴全螢幕氣球慶祝！
+                st.balloons()
                 msg_placeholder.success("🎉 中大獎了！連成一線獲得 1000 籌碼！")
             else:
-                msg_placeholder.error("❌ 殘念！沒中獎，再接再厲！")
+                msg_placeholder.error("❌ 殘念！沒中獎。再拉一輪拼手氣！")
 
-            # 為了即時更新大廳頂部的籌碼文字，重新引導畫面
-            time.sleep(1.5)
+            # 2026年最新規範：使用 height=1 的 iframe 完美隱形刷新
+            st.iframe("javascript:parent.window.location.reload();", height=1)
             st.rerun()
 
     st.write("---")
-    if st.button("返回主選單"):
+    if st.button("返回主選單", width="content"):
+        if "last_slot_res" in st.session_state:
+            del st.session_state.last_slot_res
         back_to_lobby()
         st.rerun()

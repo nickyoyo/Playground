@@ -20,7 +20,6 @@ def run_wheel(back_to_lobby):
         else:
             st.session_state.chips -= 50
 
-            # 模擬轉動動效
             status = st.empty()
             for _ in range(5):
                 status.write(f"🌀 旋轉中... {random.choice(prizes)[0]}")
@@ -30,11 +29,12 @@ def run_wheel(back_to_lobby):
             st.session_state.chips += prize_value
 
             status.empty()
-            st.balloons() if prize_value > 0 else None
+            if prize_value > 0:
+                st.balloons()
             st.success(f"🎉 結果：{prize_name}！")
             st.rerun()
 
     st.write("---")
-    if st.button("返回主選單"):
+    if st.button("返回主選單", width="content"):
         back_to_lobby()
         st.rerun()
